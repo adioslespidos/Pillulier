@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pillulier</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; max-width: 300px; margin: auto; }
+        .button { padding: 10px; border: 1px solid black; cursor: pointer; }
+        .taken { background-color: green; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Pillulier</h1>
+    <div class="grid" id="pillulier"></div>
+    <button onclick="resetPillulier()">Réinitialiser</button>
+
+    <script>
+        const jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+        const periodes = ["Matin", "Soir"];
+
+        async function loadPillulier() {
+            let response = await fetch("/get");
+            let data = await response.json();
+            const grid = document.getElementById("pillulier");
+            grid.innerHTML = "";
+
+            jours.forEach((jour, i) => {
+                periodes.forEach((periode, j) => {
+                    let key = `${i}-${j}`;
+                    let taken = data[key] || false;
+                    let btn = document.createElement("div");
+                    btn.textContent = `${jour} - ${periode}`;
+                    btn.className = `button ${taken ? 'taken' : ''}`;
+                    btn.onclick = () => togglePillule(i, j, btn);
+                    grid.appendChild(btn);
+                });
+            });
+        }
+
+        async function togglePillule(i, j, btn) {
+            let response = await fetch("/toggle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ jour: i, periode: j })
+            });
+            let result = await response.json();
+            if (result.success) {
+                btn.classList.toggle("taken");
+            }
+        }
+
+        async function resetPillulier() {
+            await fetch("/reset", { method: "POST" });
+            loadPillulier();
+        }
+
+        loadPillulier();
+    </script>
+</body>
+</html>
